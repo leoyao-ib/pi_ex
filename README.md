@@ -137,6 +137,7 @@ config = %PiEx.Agent.Config{model: model, tools: [weather_tool]}
 | `PiEx.Agent.abort/1` | Abort the current run |
 | `PiEx.Agent.get_messages/1` | Return the full conversation transcript |
 | `PiEx.Agent.status/1` | Return `:idle` or `:running` |
+| `PiEx.Agent.compact/1` | Manually trigger context compaction |
 | `PiEx.Agent.stop/1` | Shut down the agent process |
 
 ### Agent config
@@ -156,8 +157,37 @@ config = %PiEx.Agent.Config{model: model, tools: [weather_tool]}
   get_steering_messages: fn -> [] end,
   get_follow_up_messages: fn -> [] end,
   transform_context: fn ctx -> ctx end,
-  convert_to_llm: fn messages -> messages end
+  convert_to_llm: fn messages -> messages end,
+
+  # Auto context compaction (optional)
+  compaction: %PiEx.Agent.Compaction.Settings{
+    enabled: true,
+    reserve_tokens: 16_384,   # tokens reserved for output; threshold = context_window - reserve_tokens
+    keep_recent_tokens: 20_000  # recent tokens to keep verbatim; older history is summarized
+  }
 }
+```
+
+`compaction` requires the model to have a `context_window` set:
+
+```elixir
+model = %PiEx.AI.Model{id: "gpt-4o", provider: "openai", context_window: 128_000}
+```
+
+When the total context token count exceeds `context_window - reserve_tokens`, the agent automatically summarizes older history with an LLM call and replaces it with a `CompactionSummaryMessage`. The agent can then continue running indefinitely.
+
+#### Compaction events
+
+| Event | Description |
+|---|---|
+| `:compaction_start` | Summarization LLM call started |
+| `{:compaction_end, summary_msg}` | Messages replaced; `summary_msg` is the `CompactionSummaryMessage` |
+| `{:compaction_error, reason}` | Compaction failed; messages unchanged |
+
+#### Manual compaction
+
+```elixir
+PiEx.Agent.compact(agent)  # trigger immediately, regardless of token count
 ```
 
 ## PiEx.DeepAgent — File-system agent
