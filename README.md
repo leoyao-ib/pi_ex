@@ -298,3 +298,114 @@ config = %PiEx.DeepAgent.Config{
 | `{:tool_execution_start, id, name, args}` | Tool call started |
 | `{:tool_execution_update, id, name, args, partial}` | Tool call progress |
 | `{:tool_execution_end, id, name, result, is_error}` | Tool call complete |
+
+## Subagents — direct orchestration
+
+Agents can spawn subagents via the `run_agent` tool. The tool is automatically
+injected into any agent whose `depth < max_depth` (or when `max_depth` is `nil`).
+
+### Quick start
+
+```elixir
+alias PiEx.SubAgent.Definition
+
+# Define a specialised subagent inline
+reviewer = %Definition{
+  name: "reviewer",
+  description: "Reviews code for correctness, style, and security",
+  system_prompt: "You are a strict Elixir code reviewer.",
+  tools: []   # no file-write access
+}
+
+config = %PiEx.Agent.Config{
+  model: model,
+  system_prompt: "You are an orchestrator. Use run_agent to delegate tasks.",
+  tools: [],        # run_agent is injected automatically
+  subagents: [reviewer],
+  max_depth: 1,
+  subagent_timeout: 120_000,   # max time per subagent call (ms)
+  tool_call_timeout: 130_000   # must be >= subagent_timeout
+}
+
+{:ok, agent} = PiEx.Agent.start(config)
+PiEx.Agent.subscribe(agent)
+PiEx.Agent.prompt(agent, "Review the code in foo.ex using the reviewer agent.")
+```
+
+The main agent calls `run_agent(agent: "reviewer", prompt: "...")` as a normal tool.
+The subagent runs as a supervised `PiEx.Agent.Server` under the same
+`PiEx.Agent.Supervisor`.
+
+### Named agents
+
+Pre-defined agents are resolved in this order:
+
+1. **`config.subagents`** — inline list on the calling agent's config.
+2. **`PiEx.SubAgent.Registry`** — global ETS-backed registry.
+
+```elixir
+# Register globally (accessible to all agents)
+PiEx.SubAgent.Registry.register(%Definition{
+  name: "test_writer",
+  description: "Writes ExUnit tests for Elixir modules",
+  system_prompt: "You write thorough ExUnit tests.",
+  tools: [write_tool, edit_tool]
+})
+
+PiEx.SubAgent.Registry.lookup("test_writer")   # {:ok, %Definition{}}
+PiEx.SubAgent.Registry.list()                  # [%Definition{}, ...]
+PiEx.SubAgent.Registry.deregister("test_writer")
+```
+
+### SubAgent.Definition fields
+
+```elixir
+%PiEx.SubAgent.Definition{
+  name: "reviewer",            # required — referenced in run_agent(agent: "name")
+  description: "...",          # required — shown to the main agent so it picks the right agent
+  model: nil,                  # nil = inherit from calling agent
+  tools: nil,                  # nil = inherit; always stripped of any prior run_agent entry
+  extra_tools: [],             # appended to the resolved tool list
+  system_prompt: nil,          # nil = inherit from calling agent
+  max_depth: nil               # nil = inherit from calling agent
+}
+```
+
+### Config fields for subagents
+
+| Field | Default | Description |
+|---|---|---|
+| `depth` | `0` | Current nesting level; set automatically, do not set manually |
+| `max_depth` | `nil` | Max nesting; `nil` = unlimited. `run_agent` not injected when `depth >= max_depth` |
+| `parent_pid` | `nil` | Parent `Agent.Server` pid; set automatically |
+| `subagents` | `[]` | Inline `%SubAgent.Definition{}` list |
+| `subagent_timeout` | `300_000` | ms the `run_agent` tool waits per subagent |
+| `tool_call_timeout` | `60_000` | ms each tool call is allowed before being killed; set ≥ `subagent_timeout` when using subagents |
+
+### Concurrency
+
+Multiple `run_agent` calls issued in the same turn run concurrently via the
+loop's `Task.async_stream` — the model can fan out to several subagents at once.
+
+### Subagent events
+
+Subagent events are forwarded to the parent agent's subscribers as:
+
+```elixir
+{:agent_event, {:subagent_event, agent_name, depth, original_event}}
+# agent_name — String.t() | nil (nil for general, unnamed subagents)
+# depth      — non_neg_integer()
+# original_event — any normal agent event
+```
+
+### Depth limiting
+
+| `max_depth` | `depth` | `run_agent` injected? |
+|---|---|---|
+| `nil` | any | yes (unlimited) |
+| `1` | `0` | yes |
+| `1` | `1` | no |
+| `2` | `1` | yes |
+
+Setting `max_depth: 1` allows the main agent to spawn subagents but prevents
+those subagents from spawning further subagents.

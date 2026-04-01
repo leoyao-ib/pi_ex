@@ -4,9 +4,9 @@ defmodule PiEx.Agent.Config do
 
   ## Required fields
   - `:model` — `%PiEx.AI.Model{}` to use for completions
-  - `:system_prompt` — system prompt string
 
   ## Optional fields
+  - `:system_prompt` — system prompt string
   - `:tools` — list of `%PiEx.Agent.Tool{}`; default `[]`
 
   ## Hooks (all optional)
@@ -28,6 +28,18 @@ defmodule PiEx.Agent.Config do
     Requires `:model` to have a `context_window` set.
   - `:compact_fn` — override the compaction implementation. Receives `(messages, model, settings, api_key)`
     and must return `{:ok, new_messages}` or `{:error, reason}`. Useful for testing without real API calls.
+
+  ## Subagent support
+  - `:depth` — current nesting depth; 0 for main agents. Set automatically by the `run_agent` tool.
+  - `:max_depth` — maximum allowed nesting depth; `nil` = unlimited. When `depth < max_depth` (or
+    `max_depth` is `nil`), the `run_agent` tool is automatically injected into `:tools`.
+  - `:parent_pid` — pid of the parent `Agent.Server`, if this agent was spawned as a subagent.
+  - `:subagents` — inline `%PiEx.SubAgent.Definition{}` list. Checked before `PiEx.SubAgent.Registry`
+    when resolving a named agent in `run_agent`.
+  - `:subagent_timeout` — milliseconds the `run_agent` tool waits for a subagent to finish.
+    Default: `300_000` (5 minutes).
+  - `:tool_call_timeout` — milliseconds each tool call is allowed to run before being killed.
+    Default: `60_000` (1 minute). Set higher when using subagents if they may take longer.
   """
 
   alias PiEx.AI.Model
@@ -36,6 +48,7 @@ defmodule PiEx.Agent.Config do
   defstruct [
     :model,
     :system_prompt,
+    :parent_pid,
     tools: [],
     before_tool_call: nil,
     after_tool_call: nil,
@@ -45,7 +58,12 @@ defmodule PiEx.Agent.Config do
     convert_to_llm: nil,
     stream_fn: nil,
     compaction: nil,
-    compact_fn: nil
+    compact_fn: nil,
+    depth: 0,
+    max_depth: nil,
+    subagents: [],
+    subagent_timeout: nil,
+    tool_call_timeout: nil
   ]
 
   @type t :: %__MODULE__{
@@ -67,6 +85,12 @@ defmodule PiEx.Agent.Config do
              String.t()
              | nil ->
                {:ok, [PiEx.AI.Message.t()]} | {:error, term()})
-            | nil
+            | nil,
+          depth: non_neg_integer(),
+          max_depth: non_neg_integer() | nil,
+          parent_pid: pid() | nil,
+          subagents: [PiEx.SubAgent.Definition.t()],
+          subagent_timeout: pos_integer() | nil,
+          tool_call_timeout: pos_integer() | nil
         }
 end

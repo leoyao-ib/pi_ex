@@ -6,7 +6,8 @@ defmodule PiEx.Application do
     children = [
       {Task.Supervisor, name: PiEx.TaskSupervisor},
       {DynamicSupervisor, name: PiEx.Agent.Supervisor, strategy: :one_for_one},
-      PiEx.DeepAgent.FileMutex
+      PiEx.DeepAgent.FileMutex,
+      PiEx.SubAgent.Registry
     ]
 
     opts = [strategy: :one_for_one, name: PiEx.Supervisor]

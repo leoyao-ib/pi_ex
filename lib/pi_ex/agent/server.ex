@@ -111,8 +111,13 @@ defmodule PiEx.Agent.Server do
 
   @impl true
   def init(%Config{} = config) do
+    server_pid = self()
+
     state = %__MODULE__{
-      config: inject_queue_hooks(config, self())
+      config:
+        config
+        |> inject_queue_hooks(server_pid)
+        |> inject_run_agent_tool(server_pid)
     }
 
     {:ok, state}
@@ -329,5 +334,18 @@ defmodule PiEx.Agent.Server do
       | get_steering_messages: fn -> GenServer.call(server_pid, :get_steering_messages) end,
         get_follow_up_messages: fn -> GenServer.call(server_pid, :get_follow_up_messages) end
     }
+  end
+
+  # Inject the run_agent tool when depth allows nesting.
+  # Any pre-existing "run_agent" entry is replaced so each server gets a fresh
+  # closure bound to its own config and pid.
+  defp inject_run_agent_tool(%Config{max_depth: max_depth, depth: depth} = config, server_pid) do
+    if max_depth == nil or depth < max_depth do
+      tool = PiEx.Agent.Tools.RunAgent.tool(config, server_pid)
+      tools = Enum.reject(config.tools, &(&1.name == "run_agent"))
+      %{config | tools: tools ++ [tool]}
+    else
+      config
+    end
   end
 end
