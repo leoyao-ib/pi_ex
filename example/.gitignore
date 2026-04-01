@@ -20,8 +20,5 @@ erl_crash.dump
 *.ez
 
 # Ignore package tarball (built via "mix hex.build").
-pi_ex-*.tar
+example-*.tar
 
-.DS_Store
-
-*.secret.exs

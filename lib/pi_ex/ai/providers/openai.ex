@@ -192,8 +192,9 @@ defmodule PiEx.AI.Providers.OpenAI do
 
     cond do
       stop_reason != nil ->
-        # Finish current block
+        # Finish current block and stamp the final stop_reason onto the message
         {partial, block_end_events} = finish_current_block(partial)
+        partial = %{partial | stop_reason: stop_reason}
         done_event = {:done, stop_reason, partial}
         {partial, block_end_events ++ [done_event]}
 
@@ -451,32 +452,40 @@ defmodule PiEx.AI.Providers.OpenAI do
   end
 
   defp convert_message(%AssistantMessage{content: blocks}) do
-    content =
+    text =
+      blocks
+      |> Enum.flat_map(fn
+        %TextContent{text: t} -> [t]
+        _ -> []
+      end)
+      |> Enum.join()
+
+    tool_calls =
       Enum.flat_map(blocks, fn
-        %TextContent{text: t} ->
-          [%{type: "text", text: t}]
-
-        %ThinkingContent{} ->
-          # OpenAI doesn't have a thinking content type; skip
-          []
-
         %ToolCall{id: id, name: name, arguments: args} ->
-          [%{type: "tool_use", id: id, function: %{name: name, arguments: Jason.encode!(args)}}]
+          [%{id: id, type: "function", function: %{name: name, arguments: Jason.encode!(args)}}]
+
+        _ ->
+          []
       end)
 
-    [%{role: "assistant", content: content}]
+    # OpenAI requires content: null when there are tool_calls and no text
+    content = if text == "", do: nil, else: text
+    msg = %{role: "assistant", content: content}
+    msg = if tool_calls == [], do: msg, else: Map.put(msg, :tool_calls, tool_calls)
+    [msg]
   end
 
-  defp convert_message(%ToolResultMessage{tool_call_id: id, tool_name: name, content: blocks, is_error: is_error}) do
+  defp convert_message(%ToolResultMessage{tool_call_id: id, content: blocks, is_error: is_error}) do
     text =
       blocks
       |> Enum.filter(&match?(%PiEx.AI.Content.TextContent{}, &1))
       |> Enum.map(& &1.text)
       |> Enum.join("\n")
 
-    result = if is_error, do: %{error: text}, else: text
+    content = if is_error, do: "Error: #{text}", else: text
 
-    [%{role: "tool", tool_call_id: id, name: name, content: Jason.encode!(result)}]
+    [%{role: "tool", tool_call_id: id, content: content}]
   end
 
   defp convert_user_block(%PiEx.AI.Content.TextContent{text: t}), do: %{type: "text", text: t}
