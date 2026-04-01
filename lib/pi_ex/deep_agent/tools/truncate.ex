@@ -70,6 +70,7 @@ defmodule PiEx.DeepAgent.Tools.Truncate do
     {kept, byte_count} =
       Enum.reduce_while(lines, {[], 0}, fn line, {acc, bytes} ->
         new_bytes = bytes + byte_size(line) + 1
+
         if new_bytes > max_bytes do
           {:halt, {acc, bytes}}
         else
@@ -91,6 +92,7 @@ defmodule PiEx.DeepAgent.Tools.Truncate do
       |> Enum.reverse()
       |> Enum.reduce_while({[], 0}, fn line, {acc, bytes} ->
         new_bytes = bytes + byte_size(line) + 1
+
         if new_bytes > max_bytes do
           {:halt, {acc, bytes}}
         else

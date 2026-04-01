@@ -3,7 +3,14 @@ defmodule PiEx.Agent.CompactionTest do
 
   alias PiEx.Agent.Compaction
   alias PiEx.Agent.Compaction.Settings
-  alias PiEx.AI.Message.{UserMessage, AssistantMessage, ToolResultMessage, CompactionSummaryMessage}
+
+  alias PiEx.AI.Message.{
+    UserMessage,
+    AssistantMessage,
+    ToolResultMessage,
+    CompactionSummaryMessage
+  }
+
   alias PiEx.AI.Message.Usage
   alias PiEx.AI.Content.{TextContent, ThinkingContent, ToolCall}
 
@@ -43,10 +50,14 @@ defmodule PiEx.Agent.CompactionTest do
     }
   end
 
-  defp compaction_msg(summary), do: %CompactionSummaryMessage{summary: summary, tokens_before: 100, timestamp: 0}
+  defp compaction_msg(summary),
+    do: %CompactionSummaryMessage{summary: summary, tokens_before: 100, timestamp: 0}
 
   defp settings(overrides) do
-    struct(Settings, Keyword.merge([enabled: true, reserve_tokens: 1000, keep_recent_tokens: 500], overrides))
+    struct(
+      Settings,
+      Keyword.merge([enabled: true, reserve_tokens: 1000, keep_recent_tokens: 500], overrides)
+    )
   end
 
   # ---------------------------------------------------------------------------

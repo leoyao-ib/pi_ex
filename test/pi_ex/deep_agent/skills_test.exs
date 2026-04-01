@@ -57,6 +57,7 @@ defmodule PiEx.DeepAgent.SkillsTest do
       for ignored <- ["_build", "deps"] do
         dir = Path.join(tmp, ignored)
         File.mkdir_p!(dir)
+
         File.write!(
           Path.join(dir, "SKILL.md"),
           "---\nname: should-be-skipped\ndescription: Ignored\n---\n"

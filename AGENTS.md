@@ -1,2 +1,3 @@
 - Must write unit tests for new and modified code
 - Must follow the Elixir best practice
+- Run `mix format` after editing elixir files

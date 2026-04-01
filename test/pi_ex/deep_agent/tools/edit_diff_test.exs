@@ -48,6 +48,7 @@ defmodule PiEx.DeepAgent.Tools.EditDiffTest do
 
     test "applies multiple edits against original content" do
       content = "line A\nline B\nline C"
+
       edits = [
         %{old_text: "line A", new_text: "LINE A"},
         %{old_text: "line C", new_text: "LINE C"}

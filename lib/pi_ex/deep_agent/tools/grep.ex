@@ -28,7 +28,8 @@ defmodule PiEx.DeepAgent.Tools.Grep do
           },
           "path" => %{
             "type" => "string",
-            "description" => "Directory or file to search in (relative to project root). Defaults to project root."
+            "description" =>
+              "Directory or file to search in (relative to project root). Defaults to project root."
           },
           "glob" => %{
             "type" => "string",
@@ -48,7 +49,8 @@ defmodule PiEx.DeepAgent.Tools.Grep do
           },
           "limit" => %{
             "type" => "integer",
-            "description" => "Maximum number of matching lines to return. Default #{@default_limit}."
+            "description" =>
+              "Maximum number of matching lines to return. Default #{@default_limit}."
           }
         },
         "required" => ["pattern"]

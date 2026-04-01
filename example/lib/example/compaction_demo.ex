@@ -99,7 +99,6 @@ defmodule Example.CompactionDemo do
 
       {:agent_event, _} ->
         collect_turn_events()
-
     after
       60_000 -> IO.puts("\n[timeout]")
     end
@@ -115,7 +114,6 @@ defmodule Example.CompactionDemo do
 
       {:agent_event, _} ->
         collect_post_turn_events()
-
     after
       500 -> :ok
     end
@@ -131,7 +129,6 @@ defmodule Example.CompactionDemo do
 
       {:agent_event, _} ->
         collect_compaction_events()
-
     after
       60_000 -> IO.puts("[compaction] Timed out waiting for completion.")
     end

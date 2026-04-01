@@ -7,7 +7,15 @@ defmodule PiEx.AI.Providers.OpenAI do
   """
 
   alias PiEx.AI.Content.{TextContent, ThinkingContent, ToolCall}
-  alias PiEx.AI.Message.{UserMessage, AssistantMessage, ToolResultMessage, CompactionSummaryMessage, Usage}
+
+  alias PiEx.AI.Message.{
+    UserMessage,
+    AssistantMessage,
+    ToolResultMessage,
+    CompactionSummaryMessage,
+    Usage
+  }
+
   alias PiEx.AI.Model
   alias PiEx.AI.Context
 
@@ -105,7 +113,9 @@ defmodule PiEx.AI.Providers.OpenAI do
         plug -> Keyword.put(req_opts, :plug, plug)
       end
 
-    base_url = Keyword.get(opts, :base_url) || PiEx.AI.ProviderConfig.get_base_url("openai") || @base_url
+    base_url =
+      Keyword.get(opts, :base_url) || PiEx.AI.ProviderConfig.get_base_url("openai") || @base_url
+
     result = Req.post("#{base_url}/chat/completions", req_opts)
 
     case result do
@@ -119,7 +129,9 @@ defmodule PiEx.AI.Providers.OpenAI do
         send(parent, {ref, :done})
 
       {:error, exception} ->
-        reason = if match?(%Req.TransportError{reason: :closed}, exception), do: :aborted, else: :error
+        reason =
+          if match?(%Req.TransportError{reason: :closed}, exception), do: :aborted, else: :error
+
         msg = empty_assistant_message("", reason, Exception.message(exception))
         send(parent, {ref, {:error, {:error, reason, msg}}})
         send(parent, {ref, :done})
@@ -249,11 +261,18 @@ defmodule PiEx.AI.Providers.OpenAI do
       # Patch name/id if present in this delta
       acc_partial =
         update_tool_call_block(acc_partial, tc_index, fn tc ->
-          %{tc | id: tc_delta["id"] || tc.id, name: get_in(tc_delta, ["function", "name"]) || tc.name}
+          %{
+            tc
+            | id: tc_delta["id"] || tc.id,
+              name: get_in(tc_delta, ["function", "name"]) || tc.name
+          }
         end)
 
       content_idx = find_tool_call_content_index(acc_partial, tc_index)
-      delta_event = {:toolcall_delta, content_idx, tc_delta["function"]["arguments"] || "", acc_partial}
+
+      delta_event =
+        {:toolcall_delta, content_idx, tc_delta["function"]["arguments"] || "", acc_partial}
+
       {acc_partial, acc_evts ++ transition_events ++ [delta_event]}
     end)
   end
@@ -324,7 +343,8 @@ defmodule PiEx.AI.Providers.OpenAI do
       {:tool_call_content_index, _} -> true
       _ -> false
     end)
-    |> Enum.reduce({partial, []}, fn {:tool_call_content_index, tc_index} = key, {acc_partial, acc_events} ->
+    |> Enum.reduce({partial, []}, fn {:tool_call_content_index, tc_index} = key,
+                                     {acc_partial, acc_events} ->
       content_idx = Process.get(key)
       Process.delete(key)
       raw_args = Process.get({:tool_args, tc_index}, "{}")
@@ -373,7 +393,8 @@ defmodule PiEx.AI.Providers.OpenAI do
   defp block_start_event(:text, idx, partial), do: {:text_start, idx, partial}
   defp block_start_event(:thinking, idx, partial), do: {:thinking_start, idx, partial}
 
-  defp current_block_index(partial), do: Process.get(:current_block_index, length(partial.content) - 1)
+  defp current_block_index(partial),
+    do: Process.get(:current_block_index, length(partial.content) - 1)
 
   defp find_tool_call_content_index(partial, tc_index) do
     Process.get({:tool_call_content_index, tc_index}, length(partial.content) - 1)
@@ -384,7 +405,9 @@ defmodule PiEx.AI.Providers.OpenAI do
   end
 
   defp append_thinking(partial, idx, delta) do
-    update_content(partial, idx, fn %ThinkingContent{thinking: t} -> %ThinkingContent{thinking: t <> delta} end)
+    update_content(partial, idx, fn %ThinkingContent{thinking: t} ->
+      %ThinkingContent{thinking: t <> delta}
+    end)
   end
 
   defp get_text_at(partial, idx) do
@@ -520,7 +543,10 @@ defmodule PiEx.AI.Providers.OpenAI do
   # Utilities
   # ---------------------------------------------------------------------------
 
-  defp update_usage(%{"usage" => %{"prompt_tokens" => input, "completion_tokens" => output}}, partial) do
+  defp update_usage(
+         %{"usage" => %{"prompt_tokens" => input, "completion_tokens" => output}},
+         partial
+       ) do
     %{partial | usage: %Usage{input_tokens: input, output_tokens: output}}
   end
 

@@ -54,7 +54,9 @@ defmodule PiEx.AI.Providers.OpenAITest do
         ])
 
       stub_openai(OpenAITextStart, body)
-      events = collect_events(OpenAI.stream(model(), context(), plug: {Req.Test, OpenAITextStart}))
+
+      events =
+        collect_events(OpenAI.stream(model(), context(), plug: {Req.Test, OpenAITextStart}))
 
       assert {:start, %AssistantMessage{}} = hd(events)
     end
@@ -86,7 +88,9 @@ defmodule PiEx.AI.Providers.OpenAITest do
         ])
 
       stub_openai(OpenAITextDelta, body)
-      events = collect_events(OpenAI.stream(model(), context(), plug: {Req.Test, OpenAITextDelta}))
+
+      events =
+        collect_events(OpenAI.stream(model(), context(), plug: {Req.Test, OpenAITextDelta}))
 
       deltas =
         for {:text_delta, _idx, delta, _partial} <- events, do: delta
@@ -102,7 +106,9 @@ defmodule PiEx.AI.Providers.OpenAITest do
         ])
 
       stub_openai(OpenAITextFinal, body)
-      events = collect_events(OpenAI.stream(model(), context(), plug: {Req.Test, OpenAITextFinal}))
+
+      events =
+        collect_events(OpenAI.stream(model(), context(), plug: {Req.Test, OpenAITextFinal}))
 
       {:done, :stop, final} = List.last(events)
       assert [%TextContent{text: "World"}] = final.content
@@ -117,7 +123,9 @@ defmodule PiEx.AI.Providers.OpenAITest do
         ])
 
       stub_openai(OpenAITextConcat, body)
-      events = collect_events(OpenAI.stream(model(), context(), plug: {Req.Test, OpenAITextConcat}))
+
+      events =
+        collect_events(OpenAI.stream(model(), context(), plug: {Req.Test, OpenAITextConcat}))
 
       {:done, :stop, final} = List.last(events)
       assert [%TextContent{text: "Hello"}] = final.content
@@ -131,7 +139,9 @@ defmodule PiEx.AI.Providers.OpenAITest do
         ])
 
       stub_openai(OpenAITextLength, body)
-      events = collect_events(OpenAI.stream(model(), context(), plug: {Req.Test, OpenAITextLength}))
+
+      events =
+        collect_events(OpenAI.stream(model(), context(), plug: {Req.Test, OpenAITextLength}))
 
       assert {:done, :length, _} = List.last(events)
     end
@@ -147,7 +157,9 @@ defmodule PiEx.AI.Providers.OpenAITest do
         ])
 
       stub_openai(OpenAITextUsage, body)
-      events = collect_events(OpenAI.stream(model(), context(), plug: {Req.Test, OpenAITextUsage}))
+
+      events =
+        collect_events(OpenAI.stream(model(), context(), plug: {Req.Test, OpenAITextUsage}))
 
       {:done, :stop, final} = List.last(events)
       assert final.usage.input_tokens == 10
@@ -227,7 +239,11 @@ defmodule PiEx.AI.Providers.OpenAITest do
               %{
                 delta: %{
                   tool_calls: [
-                    %{index: 0, id: "call_1", function: %{name: "get_weather", arguments: ~s({"city":"Paris"})}}
+                    %{
+                      index: 0,
+                      id: "call_1",
+                      function: %{name: "get_weather", arguments: ~s({"city":"Paris"})}
+                    }
                   ]
                 },
                 finish_reason: nil

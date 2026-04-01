@@ -17,7 +17,7 @@ defmodule PiEx.DeepAgent.Tools.EditDiff do
     content_lines = String.split(content, "\n")
     old_lines = String.split(old_text, "\n")
 
-    case find_lines(content_lines, old_lines, &(&1)) do
+    case find_lines(content_lines, old_lines, & &1) do
       {:ok, start_line, end_line} ->
         {:ok, %{start_line: start_line, end_line: end_line}}
 

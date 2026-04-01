@@ -27,7 +27,8 @@ defmodule PiEx.DeepAgent.Tools.Find do
           },
           "path" => %{
             "type" => "string",
-            "description" => "Directory to search in (relative to project root). Defaults to project root."
+            "description" =>
+              "Directory to search in (relative to project root). Defaults to project root."
           },
           "limit" => %{
             "type" => "integer",

@@ -15,7 +15,9 @@ defmodule PiEx.AI.ContentTest do
 
   describe "ThinkingContent" do
     test "creates with thinking text" do
-      assert %ThinkingContent{thinking: "reasoning..."} = %ThinkingContent{thinking: "reasoning..."}
+      assert %ThinkingContent{thinking: "reasoning..."} = %ThinkingContent{
+               thinking: "reasoning..."
+             }
     end
 
     test "defaults redacted to false" do

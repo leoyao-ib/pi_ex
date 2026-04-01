@@ -49,9 +49,7 @@ defmodule PiEx.AI.Providers.LiteLLMTest do
       stub_litellm(LiteLLMTextStart, body)
 
       events =
-        collect_events(
-          LiteLLM.stream(model(), context(), plug: {Req.Test, LiteLLMTextStart})
-        )
+        collect_events(LiteLLM.stream(model(), context(), plug: {Req.Test, LiteLLMTextStart}))
 
       assert {:start, %AssistantMessage{}} = hd(events)
     end
@@ -67,9 +65,7 @@ defmodule PiEx.AI.Providers.LiteLLMTest do
       stub_litellm(LiteLLMTextFlow, body)
 
       events =
-        collect_events(
-          LiteLLM.stream(model(), context(), plug: {Req.Test, LiteLLMTextFlow})
-        )
+        collect_events(LiteLLM.stream(model(), context(), plug: {Req.Test, LiteLLMTextFlow}))
 
       types = Enum.map(events, &elem(&1, 0))
       assert :start in types
@@ -89,9 +85,7 @@ defmodule PiEx.AI.Providers.LiteLLMTest do
       stub_litellm(LiteLLMTextFinal, body)
 
       events =
-        collect_events(
-          LiteLLM.stream(model(), context(), plug: {Req.Test, LiteLLMTextFinal})
-        )
+        collect_events(LiteLLM.stream(model(), context(), plug: {Req.Test, LiteLLMTextFinal}))
 
       {:done, :stop, final} = List.last(events)
       assert [%TextContent{text: "World"}] = final.content
@@ -181,9 +175,7 @@ defmodule PiEx.AI.Providers.LiteLLMTest do
       stub_litellm(LiteLLMHttp401, ~s({"error": "unauthorized"}), 401)
 
       events =
-        collect_events(
-          LiteLLM.stream(model(), context(), plug: {Req.Test, LiteLLMHttp401})
-        )
+        collect_events(LiteLLM.stream(model(), context(), plug: {Req.Test, LiteLLMHttp401}))
 
       assert Enum.any?(events, &match?({:error, :error, _}, &1))
     end

@@ -1,6 +1,5 @@
 import Config
 
-
 try do
   import_config "dev.secret.exs"
 rescue

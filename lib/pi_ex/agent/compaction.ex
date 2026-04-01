@@ -13,7 +13,14 @@ defmodule PiEx.Agent.Compaction do
   """
 
   alias PiEx.AI.{Model, Context}
-  alias PiEx.AI.Message.{UserMessage, AssistantMessage, ToolResultMessage, CompactionSummaryMessage}
+
+  alias PiEx.AI.Message.{
+    UserMessage,
+    AssistantMessage,
+    ToolResultMessage,
+    CompactionSummaryMessage
+  }
+
   alias PiEx.AI.Content.{TextContent, ThinkingContent, ToolCall}
 
   defmodule Settings do
@@ -140,10 +147,17 @@ defmodule PiEx.Agent.Compaction do
   def estimate_tokens(%AssistantMessage{content: blocks}) do
     chars =
       Enum.reduce(blocks, 0, fn
-        %TextContent{text: t}, acc -> acc + String.length(t)
-        %ThinkingContent{thinking: t}, acc -> acc + String.length(t)
-        %ToolCall{name: name, arguments: args}, acc -> acc + String.length(name) + String.length(Jason.encode!(args))
-        _, acc -> acc
+        %TextContent{text: t}, acc ->
+          acc + String.length(t)
+
+        %ThinkingContent{thinking: t}, acc ->
+          acc + String.length(t)
+
+        %ToolCall{name: name, arguments: args}, acc ->
+          acc + String.length(name) + String.length(Jason.encode!(args))
+
+        _, acc ->
+          acc
       end)
 
     ceil(chars / 4)
@@ -245,13 +259,21 @@ defmodule PiEx.Agent.Compaction do
   Options:
   - `:previous_summary` — if set, uses the iterative update prompt
   """
-  @spec generate_summary([PiEx.AI.Message.t()], Model.t(), Settings.t(), String.t() | nil, keyword()) ::
+  @spec generate_summary(
+          [PiEx.AI.Message.t()],
+          Model.t(),
+          Settings.t(),
+          String.t() | nil,
+          keyword()
+        ) ::
           {:ok, String.t()} | {:error, term()}
   def generate_summary(messages_to_summarize, model, settings, api_key, opts \\ []) do
     previous_summary = Keyword.get(opts, :previous_summary)
     max_tokens = floor(0.8 * settings.reserve_tokens)
 
-    base_prompt = if previous_summary, do: @update_summarization_prompt, else: @summarization_prompt
+    base_prompt =
+      if previous_summary, do: @update_summarization_prompt, else: @summarization_prompt
+
     conversation_text = serialize_messages(messages_to_summarize)
 
     prompt_text =
@@ -376,8 +398,12 @@ defmodule PiEx.Agent.Compaction do
   defp serialize_message(%AssistantMessage{content: blocks}) do
     blocks
     |> Enum.flat_map(fn
-      %ThinkingContent{thinking: t} -> ["[Assistant thinking]: #{t}"]
-      %TextContent{text: t} when t != "" -> ["[Assistant]: #{t}"]
+      %ThinkingContent{thinking: t} ->
+        ["[Assistant thinking]: #{t}"]
+
+      %TextContent{text: t} when t != "" ->
+        ["[Assistant]: #{t}"]
+
       %ToolCall{name: name, arguments: args} ->
         args_str =
           args

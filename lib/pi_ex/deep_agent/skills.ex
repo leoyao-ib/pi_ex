@@ -51,8 +51,12 @@ defmodule PiEx.DeepAgent.Skills do
 
     if File.exists?(skill_md) do
       case Skill.from_file(skill_md) do
-        {:ok, skill} -> [skill]
-        {:error, reason} -> Logger.warning("Skipping skill at #{dir}: #{reason}"); []
+        {:ok, skill} ->
+          [skill]
+
+        {:error, reason} ->
+          Logger.warning("Skipping skill at #{dir}: #{reason}")
+          []
       end
     else
       dir
@@ -81,9 +85,7 @@ defmodule PiEx.DeepAgent.Skills do
     skills
     |> Enum.reduce({[], MapSet.new()}, fn skill, {acc, seen} ->
       if MapSet.member?(seen, skill.name) do
-        Logger.warning(
-          "Duplicate skill name \"#{skill.name}\" at #{skill.file_path}; skipping."
-        )
+        Logger.warning("Duplicate skill name \"#{skill.name}\" at #{skill.file_path}; skipping.")
 
         {acc, seen}
       else

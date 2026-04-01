@@ -22,7 +22,8 @@ defmodule PiEx.DeepAgent.Tools.Ls do
         "properties" => %{
           "path" => %{
             "type" => "string",
-            "description" => "Directory path to list (relative to project root). Defaults to project root."
+            "description" =>
+              "Directory path to list (relative to project root). Defaults to project root."
           },
           "limit" => %{
             "type" => "integer",
