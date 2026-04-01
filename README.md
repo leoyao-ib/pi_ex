@@ -12,6 +12,8 @@ An Elixir port of [pi-mono](https://github.com/badlogic/pi-mono)'s `ai` and `age
 
 ## Requirements
 
+- `diff` (standard Unix utility) — used by the `edit` tool to generate diffs
+- `rg` (ripgrep, optional) — used by `grep` and `find`; `find` falls back to `Path.wildcard` if absent
 - Elixir ~> 1.19 / OTP 27
 - [`req`](https://hex.pm/packages/req) ~> 0.5
 - [`jason`](https://hex.pm/packages/jason) ~> 1.4
@@ -29,11 +31,26 @@ def deps do
 end
 ```
 
-Set your OpenAI API key:
+Set your OpenAI API key via environment variable:
 
 ```bash
 export OPENAI_API_KEY="sk-..."
 ```
+
+Or via Elixir application config:
+
+```elixir
+# config/dev.exs
+config :pi_ex, :openai,
+  api_key: "sk-...",
+  base_url: "https://api.openai.com/v1"  # optional override
+
+config :pi_ex, :litellm,
+  api_key: "sk-...",
+  base_url: "http://localhost:4000/v1"   # optional override
+```
+
+Resolution order (highest to lowest priority): call-time opts → environment variables → application config → hardcoded defaults.
 
 ## PiEx.AI — LLM streaming
 
@@ -209,11 +226,6 @@ config = %PiEx.DeepAgent.Config{
   extra_tools: [my_tool]
 }
 ```
-
-### Requirements
-
-- `diff` (standard Unix utility) — used by the `edit` tool to generate diffs
-- `rg` (ripgrep, optional) — used by `grep` and `find`; `find` falls back to `Path.wildcard` if absent
 
 ### Agent events
 

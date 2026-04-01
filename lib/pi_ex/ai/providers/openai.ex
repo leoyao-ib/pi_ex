@@ -68,7 +68,7 @@ defmodule PiEx.AI.Providers.OpenAI do
   # ---------------------------------------------------------------------------
 
   defp run_request(parent, ref, model, context, opts) do
-    api_key = Keyword.get(opts, :api_key) || PiEx.AI.EnvApiKeys.get("openai") || ""
+    api_key = Keyword.get(opts, :api_key) || PiEx.AI.ProviderConfig.get_api_key("openai") || ""
     body = build_request_body(model, context, opts)
     initial_partial = empty_assistant_message(model.id, :stop, nil)
     send(parent, {ref, {:event, {:start, initial_partial}}})
@@ -105,7 +105,7 @@ defmodule PiEx.AI.Providers.OpenAI do
         plug -> Keyword.put(req_opts, :plug, plug)
       end
 
-    base_url = Keyword.get(opts, :base_url, @base_url)
+    base_url = Keyword.get(opts, :base_url) || PiEx.AI.ProviderConfig.get_base_url("openai") || @base_url
     result = Req.post("#{base_url}/chat/completions", req_opts)
 
     case result do

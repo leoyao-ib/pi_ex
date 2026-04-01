@@ -25,8 +25,8 @@ defmodule PiEx.AI.Providers.LiteLLM do
   """
   @spec stream(Model.t(), Context.t(), keyword()) :: Enumerable.t()
   def stream(%Model{} = model, %Context{} = context, opts \\ []) do
-    base_url = Keyword.get(opts, :base_url) || System.get_env("LITELLM_API_BASE") || @default_base_url
-    api_key = Keyword.get(opts, :api_key) || System.get_env("LITELLM_API_KEY") || ""
+    base_url = Keyword.get(opts, :base_url) || PiEx.AI.ProviderConfig.get_base_url("litellm") || @default_base_url
+    api_key = Keyword.get(opts, :api_key) || PiEx.AI.ProviderConfig.get_api_key("litellm") || ""
 
     merged_opts =
       opts
