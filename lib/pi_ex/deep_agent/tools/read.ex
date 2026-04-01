@@ -6,9 +6,16 @@ defmodule PiEx.DeepAgent.Tools.Read do
   alias PiEx.DeepAgent.PathGuard
   alias PiEx.DeepAgent.Tools.Truncate
 
-  @doc "Build a `%PiEx.Agent.Tool{}` scoped to `project_root`."
-  @spec tool(String.t()) :: Tool.t()
-  def tool(project_root) do
+  @doc """
+  Build a `%PiEx.Agent.Tool{}` scoped to `project_root`.
+
+  Options:
+  - `:allowed_paths` — list of absolute file paths that may be read even when
+    outside `project_root` (used for skill files).
+  """
+  @spec tool(String.t(), keyword()) :: Tool.t()
+  def tool(project_root, opts \\ []) do
+    allowed_paths = Keyword.get(opts, :allowed_paths, [])
     %Tool{
       name: "read",
       label: "Read File",
@@ -40,7 +47,9 @@ defmodule PiEx.DeepAgent.Tools.Read do
         offset = Map.get(params, "offset")
         limit = Map.get(params, "limit")
 
-        case execute(%{path: path, offset: offset, limit: limit}, project_root) do
+        case execute(%{path: path, offset: offset, limit: limit}, project_root,
+               allowed_paths: allowed_paths
+             ) do
           {:ok, text} -> {:ok, %{content: [%TextContent{text: text}], details: nil}}
           {:error, reason} -> {:error, reason}
         end
@@ -49,13 +58,14 @@ defmodule PiEx.DeepAgent.Tools.Read do
   end
 
   @doc "Execute the read operation directly (for testing)."
-  @spec execute(map(), String.t()) :: {:ok, String.t()} | {:error, String.t()}
-  def execute(params, project_root) do
+  @spec execute(map(), String.t(), keyword()) :: {:ok, String.t()} | {:error, String.t()}
+  def execute(params, project_root, opts \\ []) do
     path = Map.fetch!(params, :path)
     offset = Map.get(params, :offset)
     limit = Map.get(params, :limit)
+    allowed_paths = Keyword.get(opts, :allowed_paths, [])
 
-    with {:ok, abs_path} <- PathGuard.resolve(project_root, path),
+    with {:ok, abs_path} <- resolve_path(project_root, path, allowed_paths),
          {:ok, content} <- safe_read(abs_path) do
       lines = String.split(content, "\n")
       sliced = slice_lines(lines, offset, limit)
@@ -75,6 +85,17 @@ defmodule PiEx.DeepAgent.Tools.Read do
         |> Enum.join("\n")
 
       {:ok, numbered}
+    end
+  end
+
+  # Resolve path: bypass PathGuard for exact allowed_paths entries.
+  defp resolve_path(project_root, path, allowed_paths) when is_list(allowed_paths) do
+    expanded = Path.expand(path)
+
+    if expanded in allowed_paths do
+      {:ok, expanded}
+    else
+      PathGuard.resolve(project_root, path)
     end
   end
 

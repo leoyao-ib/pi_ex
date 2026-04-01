@@ -25,6 +25,7 @@ defmodule PiEx.AI do
 
   @providers %{
     "openai" => PiEx.AI.Providers.OpenAI,
+    "openai_responses" => PiEx.AI.Providers.OpenAIResponses,
     "litellm" => PiEx.AI.Providers.LiteLLM
   }
 

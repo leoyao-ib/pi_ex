@@ -27,7 +27,7 @@ defmodule Example.DeepAgentExample do
 
   alias PiEx.DeepAgent.PathGuard
 
-  @model %PiEx.AI.Model{id: "gpt-5.4", provider: "openai"}
+  @model %PiEx.AI.Model{id: "gpt-5.4", provider: "openai_responses"}
 
   @doc """
   Build config, start the agent, subscribe, send the analyst prompt,

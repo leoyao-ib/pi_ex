@@ -135,9 +135,18 @@ defmodule PiEx.Agent.Loop do
           send(server_pid, {:agent_event, {:message_start, partial}})
           {:cont, {partial, acc_messages}}
 
-        {type, _, _, partial} when type in [:text_delta, :text_start, :text_end,
-                                             :thinking_delta, :thinking_start, :thinking_end,
-                                             :toolcall_delta, :toolcall_start, :toolcall_end] ->
+        {type, _, _, partial}
+        when type in [
+               :text_delta,
+               :text_start,
+               :text_end,
+               :thinking_delta,
+               :thinking_start,
+               :thinking_end,
+               :toolcall_delta,
+               :toolcall_start,
+               :toolcall_end
+             ] ->
           send(server_pid, {:agent_event, {:message_update, partial, event}})
           {:cont, {partial, acc_messages}}
 
@@ -147,6 +156,7 @@ defmodule PiEx.Agent.Loop do
           {:halt, {:ok, final_message, new_messages}}
 
         {:error, reason, error_message} ->
+          send(server_pid, {:agent_event, {:agent_error, {reason, error_message.error_message}}})
           send(server_pid, {:agent_event, {:message_end, error_message}})
           tag = if reason == :aborted, do: :halt, else: :error
           {:halt, {tag, acc_messages ++ [error_message]}}
@@ -181,7 +191,9 @@ defmodule PiEx.Agent.Loop do
         on_timeout: :kill_task
       )
       |> Enum.map(fn
-        {:ok, result} -> result
+        {:ok, result} ->
+          result
+
         {:exit, reason} ->
           %ToolResultMessage{
             tool_call_id: "unknown",
@@ -220,14 +232,22 @@ defmodule PiEx.Agent.Loop do
         case Map.fetch(tool_map, tool_name) do
           :error ->
             result = error_tool_result(call_id, tool_name, "Unknown tool: #{tool_name}")
-            send(server_pid, {:agent_event, {:tool_execution_end, call_id, tool_name, result, true}})
+
+            send(
+              server_pid,
+              {:agent_event, {:tool_execution_end, call_id, tool_name, result, true}}
+            )
+
             result
 
           {:ok, tool} ->
             send(server_pid, {:agent_event, {:tool_execution_start, call_id, tool_name, args}})
 
             on_update = fn partial_result ->
-              send(server_pid, {:agent_event, {:tool_execution_update, call_id, tool_name, args, partial_result}})
+              send(
+                server_pid,
+                {:agent_event, {:tool_execution_update, call_id, tool_name, args, partial_result}}
+              )
             end
 
             case tool.execute.(call_id, args, on_update: on_update) do
@@ -247,12 +267,21 @@ defmodule PiEx.Agent.Loop do
                     f -> f.(call_id, tool_name, result)
                   end
 
-                send(server_pid, {:agent_event, {:tool_execution_end, call_id, tool_name, final_result, false}})
+                send(
+                  server_pid,
+                  {:agent_event, {:tool_execution_end, call_id, tool_name, final_result, false}}
+                )
+
                 final_result
 
               {:error, reason} ->
                 result = error_tool_result(call_id, tool_name, reason)
-                send(server_pid, {:agent_event, {:tool_execution_end, call_id, tool_name, result, true}})
+
+                send(
+                  server_pid,
+                  {:agent_event, {:tool_execution_end, call_id, tool_name, result, true}}
+                )
+
                 result
             end
         end

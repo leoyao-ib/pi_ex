@@ -9,6 +9,7 @@ defmodule PiEx.DeepAgent.Config do
   ## Optional
   - `:system_prompt` — override the built-in system prompt; `nil` = use default
   - `:extra_tools` — additional `%PiEx.Agent.Tool{}` list; default `[]`
+  - `:skills_root` — path to a directory containing skill subdirectories; `nil` = no skills
   - `:api_key` — override env-var API key
   - `:temperature` — float
   - `:max_tokens` — integer
@@ -21,6 +22,7 @@ defmodule PiEx.DeepAgent.Config do
     :model,
     :project_root,
     :system_prompt,
+    :skills_root,
     :api_key,
     :temperature,
     :max_tokens,
@@ -31,6 +33,7 @@ defmodule PiEx.DeepAgent.Config do
           model: Model.t(),
           project_root: String.t(),
           system_prompt: String.t() | nil,
+          skills_root: String.t() | nil,
           api_key: String.t() | nil,
           temperature: float() | nil,
           max_tokens: pos_integer() | nil,

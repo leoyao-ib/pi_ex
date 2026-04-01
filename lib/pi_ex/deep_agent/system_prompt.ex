@@ -6,10 +6,12 @@ defmodule PiEx.DeepAgent.SystemPrompt do
 
   Options:
   - `:append_system_prompt` — string appended at the end
+  - `:skills` — list of `%PiEx.DeepAgent.Skill{}` to include in the prompt
   """
   @spec build([PiEx.Agent.Tool.t()], keyword()) :: String.t()
   def build(tools, opts \\ []) do
     append = Keyword.get(opts, :append_system_prompt, "")
+    skills = Keyword.get(opts, :skills, [])
 
     tool_section =
       tools
@@ -40,6 +42,45 @@ defmodule PiEx.DeepAgent.SystemPrompt do
       String.trim_trailing(base) <> "\n\n" <> append
     else
       base
+    end
+    |> maybe_append_skills(skills)
+  end
+
+  defp maybe_append_skills(prompt, []), do: prompt
+
+  defp maybe_append_skills(prompt, skills) do
+    visible =
+      Enum.reject(skills, & &1.disable_model_invocation)
+
+    case visible do
+      [] ->
+        prompt
+
+      _ ->
+        skill_entries =
+          visible
+          |> Enum.map(fn s ->
+            """
+              <skill>
+                <name>#{s.name}</name>
+                <description>#{s.description}</description>
+                <location>#{s.file_path}</location>
+              </skill>\
+            """
+          end)
+          |> Enum.join("\n")
+
+        skills_block = """
+
+        <available_skills>
+        #{skill_entries}
+        </available_skills>
+
+        When a task matches a skill's description, use the `read` tool to load the \
+        SKILL.md file at its `<location>` and follow its instructions.\
+        """
+
+        String.trim_trailing(prompt) <> skills_block
     end
   end
 end

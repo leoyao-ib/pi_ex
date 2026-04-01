@@ -18,7 +18,7 @@ defmodule PiEx.DeepAgent do
   See `PiEx.Agent` for the full interaction API (prompt, subscribe, steer, abort, etc.).
   """
 
-  alias PiEx.DeepAgent.{Config, SystemPrompt}
+  alias PiEx.DeepAgent.{Config, Skills, SystemPrompt}
   alias PiEx.DeepAgent.Tools.{Edit, Find, Grep, Ls, Read, Write}
 
   @doc """
@@ -28,14 +28,16 @@ defmodule PiEx.DeepAgent do
   """
   @spec start(Config.t()) :: {:ok, pid()} | {:error, String.t()}
   def start(%Config{} = config) do
-    with {:ok, canonical} <- Config.validate(config) do
+    with {:ok, canonical} <- Config.validate(config),
+         {:ok, skills} <- Skills.load_all(canonical.skills_root) do
       root = canonical.project_root
-      built_in = built_in_tools(root)
+      skill_file_paths = Enum.map(skills, & &1.file_path)
+      built_in = built_in_tools(root, allowed_paths: skill_file_paths)
       all_tools = built_in ++ canonical.extra_tools
 
       system_prompt =
         canonical.system_prompt ||
-          SystemPrompt.build(all_tools)
+          SystemPrompt.build(all_tools, skills: skills)
 
       agent_config = %PiEx.Agent.Config{
         model: canonical.model,
@@ -62,12 +64,13 @@ defmodule PiEx.DeepAgent do
   end
 
   @doc "Return the list of built-in tools for the given `project_root`."
-  @spec built_in_tools(String.t()) :: [PiEx.Agent.Tool.t()]
-  def built_in_tools(project_root) do
+  @spec built_in_tools(String.t(), keyword()) :: [PiEx.Agent.Tool.t()]
+  def built_in_tools(project_root, opts \\ []) do
+    allowed_paths = Keyword.get(opts, :allowed_paths, [])
     [
       Ls.tool(project_root),
       Find.tool(project_root),
-      Read.tool(project_root),
+      Read.tool(project_root, allowed_paths: allowed_paths),
       Grep.tool(project_root),
       Write.tool(project_root),
       Edit.tool(project_root)

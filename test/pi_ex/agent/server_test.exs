@@ -14,7 +14,11 @@ defmodule PiEx.Agent.ServerTest do
 
   defp text_stream(text) do
     partial_empty = %AssistantMessage{
-      content: [], model: "test", usage: %Usage{}, stop_reason: :stop, timestamp: 0
+      content: [],
+      model: "test",
+      usage: %Usage{},
+      stop_reason: :stop,
+      timestamp: 0
     }
 
     partial_done = %AssistantMessage{
@@ -38,7 +42,11 @@ defmodule PiEx.Agent.ServerTest do
     tc = %ToolCall{id: call_id, name: tool_name, arguments: args}
 
     partial_empty = %AssistantMessage{
-      content: [], model: "test", usage: %Usage{}, stop_reason: :tool_use, timestamp: 0
+      content: [],
+      model: "test",
+      usage: %Usage{},
+      stop_reason: :tool_use,
+      timestamp: 0
     }
 
     partial_done = %AssistantMessage{
@@ -54,6 +62,22 @@ defmodule PiEx.Agent.ServerTest do
       {:toolcall_start, 0, partial_empty},
       {:toolcall_end, 0, tc, partial_done},
       {:done, :tool_use, partial_done}
+    ]
+  end
+
+  defp error_stream(reason, message) do
+    error_message = %AssistantMessage{
+      content: [],
+      model: "test",
+      usage: %Usage{},
+      stop_reason: :error,
+      timestamp: 0,
+      error_message: message
+    }
+
+    [
+      {:start, error_message},
+      {:error, reason, error_message}
     ]
   end
 
@@ -130,6 +154,17 @@ defmodule PiEx.Agent.ServerTest do
 
       user_msg = hd(messages)
       assert %Message.UserMessage{content: "user prompt"} = user_msg
+    end
+
+    test "broadcasts agent_error when the provider stream fails" do
+      pid = start_agent!(base_config(fn -> error_stream(:error, "HTTP 400: bad request") end))
+      Server.subscribe(pid)
+      Server.prompt(pid, "broken")
+
+      assert_receive {:agent_event, {:agent_error, {:error, "HTTP 400: bad request"}}}, 3000
+      assert_receive {:agent_event, {:agent_end, messages}}, 3000
+
+      assert %AssistantMessage{error_message: "HTTP 400: bad request"} = List.last(messages)
     end
 
     test "returns :error when already running" do

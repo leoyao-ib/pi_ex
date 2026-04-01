@@ -22,6 +22,7 @@ defmodule PiEx.AI.ProviderConfig do
 
   @provider_env_vars %{
     "openai" => %{api_key: "OPENAI_API_KEY", base_url: nil},
+    "openai_responses" => %{api_key: "OPENAI_API_KEY", base_url: nil},
     "litellm" => %{api_key: "LITELLM_API_KEY", base_url: "LITELLM_API_BASE"}
   }
 
