@@ -134,7 +134,7 @@ defmodule PiEx.AI.Providers.OpenAIResponses do
 
       {:error, exception} ->
         reason =
-          if match?(%Req.TransportError{reason: :closed}, exception), do: :aborted, else: :error
+            if is_struct(exception, Req.TransportError) and exception.reason == :closed, do: :aborted, else: :error
 
         msg = empty_assistant_message("", reason, Exception.message(exception))
         send(parent, {ref, {:error, {:error, reason, msg}}})
