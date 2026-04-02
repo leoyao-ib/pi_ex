@@ -7,6 +7,7 @@ defmodule PiEx.Application do
       {Task.Supervisor, name: PiEx.TaskSupervisor},
       {DynamicSupervisor, name: PiEx.Agent.Supervisor, strategy: :one_for_one},
       PiEx.DeepAgent.FileMutex,
+      PiEx.DeepAgent.TodoStore,
       PiEx.SubAgent.Registry
     ]
 

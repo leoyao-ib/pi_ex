@@ -64,6 +64,14 @@ defmodule PiEx.DeepAgentTest do
       assert "edit" in tool_names
     end
 
+    test "includes todo tool names", %{dir: dir} do
+      tools = DeepAgent.built_in_tools(dir)
+      tool_names = Enum.map(tools, & &1.name)
+      assert "todo_create" in tool_names
+      assert "todo_update" in tool_names
+      assert "todo_list" in tool_names
+    end
+
     test "system prompt built from built-in tools includes each tool name", %{dir: dir} do
       tools = DeepAgent.built_in_tools(dir)
       prompt = PiEx.DeepAgent.SystemPrompt.build(tools)
